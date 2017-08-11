@@ -6,4 +6,6 @@ typedef struct HeketStringArray {
 	char** values;
 } HeketStringArray;
 
+char* heket_string_array_to_string(HeketStringArray array);
+
 #endif
