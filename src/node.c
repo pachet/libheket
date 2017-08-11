@@ -15,8 +15,21 @@ static int add_child_node_to_node(HeketNode child_node, HeketNode parent_node)
 	return 0;
 }
 
+static char* slice_abnf_subset(const char* abnf, int start_pos, int end_pos)
+{
+	int subset_len = end_pos - start_pos;
+	int subset_bytes = (subset_len + 1) * sizeof(char);
+	char* abnf_subset = malloc(subset_bytes);
+	strncpy(abnf_subset, abnf + start_pos, subset_len);
+
+	return abnf_subset;
+}
+
 static ParseResult parse_group(const char* abnf, int offset)
 {
+	// Advance past the initial "(" starting parenthesis:
+	offset++;
+
 	int i = offset;
 	int len = strlen(abnf);
 	int parens_count = 0;
@@ -37,16 +50,13 @@ static ParseResult parse_group(const char* abnf, int offset)
 
 	assert(parens_count == 0);
 
-	int subset_len = i - offset;
-	int subset_bytes = (subset_len + 1) * sizeof(char);
-	char* abnf_subset = malloc(subset_bytes);
-	strncpy(abnf_subset, abnf + offset, subset_len);
+	char* abnf_subset = slice_abnf_subset(abnf, offset, i);
 
 	HeketNode child_node = heket_node_from_abnf(abnf_subset);
 
 	ParseResult result = {
 		node: &child_node,
-		len:  subset_len
+		len:  strlen(abnf_subset)
 	};
 
 	return result;
@@ -54,9 +64,37 @@ static ParseResult parse_group(const char* abnf, int offset)
 
 static ParseResult parse_optional(const char* abnf, int offset)
 {
+	// Advance past the initial "[" starting bracket:
+	offset++;
+
+	int i = offset;
+	int len = strlen(abnf);
+	int bracket_count = 0;
+
+	while (i < len) {
+		char token = abnf[i++];
+
+		if (token == 0x5B) {
+			bracket_count++;
+		} else if (token == 0x5D) {
+			if (bracket_count == 0) {
+				break;
+			}
+
+			bracket_count--;
+		}
+	}
+
+	assert(bracket_count == 0);
+
+	char* abnf_subset = slice_abnf_subset(abnf, offset, i);
+	HeketNode child_node = heket_node_from_abnf(abnf_subset);
+
+	child_node.optional = 1;
+
 	ParseResult result = {
-		node: NULL,
-		len:  0
+		node: &child_node,
+		len:  strlen(abnf_subset)
 	};
 
 	return result;
@@ -64,8 +102,32 @@ static ParseResult parse_optional(const char* abnf, int offset)
 
 static ParseResult parse_string(const char* abnf, int offset)
 {
+	// Advance past the initial double quotes:
+	offset++;
+
+	int i = offset;
+	int len = strlen(abnf);
+	int found_end_quotes = 0;
+
+	while (i < len) {
+		char token = abnf[i++];
+
+		if (token == 0x22) {
+			found_end_quotes = 1;
+			break;
+		}
+	}
+
+	assert(found_end_quotes == 1);
+
+	char* abnf_subset = slice_abnf_subset(abnf, offset, i);
+
+	HeketNode child_node = {
+		quoted_string: abnf_subset
+	};
+
 	ParseResult result = {
-		node: NULL,
+		node: &child_node,
 		len:  0
 	};
 
