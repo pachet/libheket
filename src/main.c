@@ -3,7 +3,7 @@
 
 int main() {
 
-	HeketRuleset ruleset = heket.ruleset_from_abnf("foo = \"bar\" | \"baz\"");
+	HeketRuleset ruleset = heket.ruleset_from_abnf("    foo = \"bar\" | \"baz\"\n    bam\n        baw");
 
 	printf("result was: %s\n", ruleset.abnf);
 
