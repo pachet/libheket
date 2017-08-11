@@ -104,9 +104,22 @@ static ParseResult parse_alternative(const char* abnf, int offset)
 
 static ParseResult parse_whitespace(const char* abnf, int offset)
 {
+	int i = offset;
+	int len = strlen(abnf);
+
+	while (i < len) {
+		char token = abnf[i];
+
+		if (token != 0x20 && token != 0x09) {
+			break;
+		}
+
+		i++;
+	}
+
 	ParseResult result = {
 		node: NULL,
-		len:  0
+		len:  i - offset
 	};
 
 	return result;
