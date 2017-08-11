@@ -21,7 +21,7 @@ HeketStringArray str_split(const char* str, const char delim)
 		i++;
 	}
 
-	int bytes = (substr_count + 1) * sizeof(char*);
+	int bytes = substr_count * sizeof(char*);
 	char** substrs = malloc(bytes);
 
 	HeketStringArray result;
@@ -55,8 +55,6 @@ HeketStringArray str_split(const char* str, const char delim)
 		offset = i + 1;
 		i++;
 	}
-
-	substrs[substr_idx] = NULL;
 
 	result.len = substr_idx;
 	result.values = substrs;
