@@ -5,10 +5,13 @@ typedef struct HeketNode {
 
 	char* parent_rulename;
 
-	HeketNode* child_nodes;
+	struct HeketNode* child_nodes;
 	int child_count;
 
 	int optional;
+
+	int min_repeats;
+	int max_repeats;
 
 	char* quoted_string;
 

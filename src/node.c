@@ -10,8 +10,38 @@ typedef struct ParseResult {
 
 } ParseResult;
 
-static int add_child_node_to_node(HeketNode child_node, HeketNode parent_node)
+static HeketNode last_child_of_node(HeketNode parent_node)
 {
+	int child_count = parent_node.child_count;
+
+	return parent_node.child_nodes[child_count - 1];
+}
+
+static int node_is_repeating(HeketNode node)
+{
+	if (node.min_repeats == 0 && node.max_repeats == 0) {
+		return 0;
+	}
+
+	return 1;
+}
+
+static int add_child_to_node(HeketNode child_node, HeketNode parent_node)
+{
+	if (parent_node.child_count > 0) {
+		HeketNode last_child = last_child_of_node(parent_node);
+
+		if (node_is_repeating(last_child)) {
+			child_node.min_repeats = last_child.min_repeats;
+			child_node.max_repeats = last_child.max_repeats;
+
+			parent_node.child_nodes[parent_node.child_count - 1] = child_node;
+			free(&last_child);
+
+			return 1;
+		}
+	}
+
 	return 0;
 }
 
@@ -146,9 +176,57 @@ static ParseResult parse_numeric(const char* abnf, int offset)
 
 static ParseResult parse_repeat(const char* abnf, int offset)
 {
+	// NOTICE: We don't advance past the initial token in this case.
+
+	int i = offset;
+	int len = strlen(abnf);
+	int asterisk_idx = 0;
+
+	while (i < len) {
+		char token = abnf[i++];
+
+		if (token == 0x2A) {
+			assert(asterisk_idx == -1);
+			asterisk_idx = i;
+		} else if (token < 0x30 || token > 0x39) {
+			break;
+		}
+	}
+
+	int subset_len = i - offset;
+	int min_repeats;
+	int max_repeats;
+
+	if (asterisk_idx != -1) {
+		if (asterisk_idx == offset) {
+			min_repeats = 0;
+		} else {
+			char* min_repeat_str = slice_abnf_subset(abnf, offset, asterisk_idx);
+			min_repeats = strtol(min_repeat_str, NULL, 10);
+		}
+
+		if (asterisk_idx == i) {
+			max_repeats = -1;
+		} else {
+			char* max_repeat_str = slice_abnf_subset(abnf, asterisk_idx, i);
+			max_repeats = strtol(max_repeat_str, NULL, 10);
+		}
+	} else {
+		// If no asterisk was encountered, the clause can be repeated
+		// only the specified number of times; no more, no less.
+		char* abnf_subset = slice_abnf_subset(abnf, offset, i);
+		min_repeats = strtol(abnf_subset, NULL, 10);
+		max_repeats = min_repeats;
+	}
+
+	HeketNode node = {
+		min_repeats: min_repeats,
+		max_repeats: max_repeats
+	};
+
 	ParseResult result = {
-		node: NULL,
-		len:  0
+		len:  subset_len,
+		node: &node
 	};
 
 	return result;
@@ -259,7 +337,7 @@ HeketNode heket_node_from_abnf(const char* abnf)
 		i += parse_result.len;
 
 		if (parse_result.node != 0) {
-			add_child_node_to_node(*parse_result.node, node);
+			add_child_to_node(*parse_result.node, node);
 		}
 	}
 
