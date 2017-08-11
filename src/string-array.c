@@ -37,5 +37,7 @@ char* heket_string_array_to_string(HeketStringArray string_array)
 		i++;
 	}
 
+	result[bytes - 1] = 0x00;
+
 	return result;
 }
