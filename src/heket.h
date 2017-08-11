@@ -3,11 +3,10 @@
 
 #include "ruleset.h"
 
-HeketRuleset heket_ruleset_from_abnf(const char* abnf);
-
 typedef struct HeketAPI {
 
 	HeketRuleset (*ruleset_from_abnf)();
+	HeketRuleset (*ruleset_from_filepath)();
 
 } HeketAPI;
 

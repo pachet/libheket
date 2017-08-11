@@ -8,5 +8,6 @@ typedef struct HeketRuleset {
 } HeketRuleset;
 
 HeketRuleset heket_ruleset_from_abnf(const char *abnf);
+HeketRuleset heket_ruleset_from_filepath(const char *filepath);
 
 #endif
