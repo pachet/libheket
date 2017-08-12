@@ -4,6 +4,7 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include "node.h"
+#include "parse-result.h"
 
 typedef struct ParseResult {
 
@@ -599,4 +600,11 @@ HeketNode heket_node_from_abnf(const char* abnf)
 	}
 
 	return node;
+}
+
+HeketParseResult parse_text_with_node(const char* text, HeketNode node)
+{
+	HeketParseResult result;
+
+	return result;
 }

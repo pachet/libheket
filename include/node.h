@@ -2,6 +2,7 @@
 #define HEKET_NODE_H
 
 #include <stdbool.h>
+#include "parse-result.h"
 
 typedef enum {
 	NODE_TYPE_SEQUENTIAL_CHILDREN,
@@ -45,6 +46,8 @@ typedef struct HeketNode {
 
 
 
-HeketNode heket_node_from_abnf(const char *abnf);
+HeketNode heket_node_from_abnf(const char* abnf);
+
+HeketParseResult parse_text_with_node(const char* text, HeketNode node);
 
 #endif

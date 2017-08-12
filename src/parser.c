@@ -1,9 +1,19 @@
 #include <stdbool.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <assert.h>
 #include "parser.h"
+#include "rule.h"
 #include "parse-result.h"
+#include "ruleset.h"
 
-bool add_ruleset_to_parser(HeketRuleset ruleset, HeketParser parser)
+bool add_ruleset_to_parser(HeketRuleset ruleset, HeketParser* parser_ptr)
 {
+	int bytes = (parser_ptr->ruleset_count + 1) * sizeof(HeketRuleset);
+	parser_ptr->rulesets = realloc(parser_ptr->rulesets, bytes);
+	parser_ptr->rulesets[parser_ptr->ruleset_count] = ruleset;
+	parser_ptr->ruleset_count++;
+
 	return true;
 }
 
@@ -22,10 +32,15 @@ BIT            =  \"0\" / \"1\"\
 
 HeketParser heket_parser_from_ruleset(HeketRuleset ruleset)
 {
-	HeketParser parser;
+	HeketParser parser = {
+		ruleset_count: 0
+	};
 
-	add_ruleset_to_parser(get_core_ruleset(), parser);
-	add_ruleset_to_parser(ruleset, parser);
+	HeketParser* parser_ptr = &parser;
+
+	assert(add_ruleset_to_parser(get_core_ruleset(), parser_ptr));
+	assert(add_ruleset_to_parser(ruleset, parser_ptr));
+	assert(parser.ruleset_count == 2);
 
 	return parser;
 }
@@ -45,10 +60,23 @@ HeketParser heket_parser_from_filepath(const char* filepath)
 	return heket_parser_from_ruleset(ruleset);
 }
 
+HeketRuleset get_first_parser_ruleset(HeketParser parser)
+{
+	assert(parser.ruleset_count > 0);
+	return parser.rulesets[0];
+}
+
+HeketRule get_first_parser_rule(HeketParser parser)
+{
+	HeketRuleset ruleset = get_first_parser_ruleset(parser);
+
+	return get_first_ruleset_rule(ruleset);
+}
 
 HeketParseResult heket_parse(const char* text, HeketParser parser)
 {
-	HeketParseResult result;
+	HeketRule rule = get_first_parser_rule(parser);
+	HeketParseResult parse_result = parse_text_with_rule(text, rule);
 
-	return result;
+	return parse_result;
 }
