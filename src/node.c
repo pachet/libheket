@@ -534,7 +534,7 @@ static ParseResult parse_rulename(const char* abnf, int offset)
 HeketNode heket_node_from_abnf(const char* abnf)
 {
 	HeketNode node = {
-		type: NODE_TYPE_SEQUENTIAL_CHILDREN,
+		type: NODE_TYPE_SEQUENTIAL,
 		child_count: 0
 	};
 
@@ -578,7 +578,7 @@ HeketNode heket_node_from_abnf(const char* abnf)
 
 		case 0x2F: // /
 			parse_result = parse_alternative(abnf, i);
-			node.type = NODE_TYPE_ALTERNATIVE_CHILDREN;
+			node.type = NODE_TYPE_ALTERNATIVE;
 			break;
 
 		case 0x20: // single space
@@ -605,6 +605,7 @@ HeketNode heket_node_from_abnf(const char* abnf)
 HeketParseResult parse_text_with_node(const char* text, HeketNode node)
 {
 	HeketParseResult result;
+
 
 	return result;
 }
