@@ -27,7 +27,7 @@ typedef struct HeketNode {
 	char* rulename;
 	char* parent_rulename;
 
-	enum HeketNodeType type;
+	HeketNodeType type;
 
 	struct HeketNode* child_nodes;
 	int child_count;
@@ -37,7 +37,7 @@ typedef struct HeketNode {
 
 	char* quoted_string;
 
-	enum NumericBase numeric_base;
+	NumericBase numeric_base;
 	int numeric_value;
 
 } HeketNode;
