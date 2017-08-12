@@ -42,13 +42,9 @@ HeketStringArray str_split(const char* str, const char delim)
 
 		int substr_len = i - offset;
 
-		if (i + 1 == len) {
-			substr_len++;
-		}
-
-		char* substr = malloc(substr_len);
-
+		char* substr = malloc(substr_len + 1);
 		memcpy(substr, str + offset, substr_len);
+		substr[substr_len] = 0;
 
 		substrs[substr_idx] = substr;
 		substr_idx++;
