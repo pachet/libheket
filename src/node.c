@@ -42,6 +42,12 @@ static int add_child_to_node(HeketNode child_node, HeketNode parent_node)
 		}
 	}
 
+
+	int bytes = (parent_node.child_count + 1) * sizeof(HeketNode);
+	parent_node.child_nodes = realloc(parent_node.child_nodes, bytes);
+	parent_node.child_nodes[parent_node.child_count] = child_node;
+	parent_node.child_count++;
+
 	return 0;
 }
 
