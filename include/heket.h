@@ -9,6 +9,7 @@ typedef struct HeketAPI {
 	HeketRuleset (*ruleset_from_abnf)();
 	HeketRuleset (*ruleset_from_filepath)();
 	HeketParser (*parser_from_filepath)();
+	HeketParseResult (*parse)();
 
 } HeketAPI;
 

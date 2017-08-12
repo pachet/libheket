@@ -1,5 +1,6 @@
 #include <stdbool.h>
 #include "parser.h"
+#include "parse-result.h"
 
 bool add_ruleset_to_parser(HeketRuleset ruleset, HeketParser parser)
 {
@@ -45,3 +46,9 @@ HeketParser heket_parser_from_filepath(const char* filepath)
 }
 
 
+HeketParseResult heket_parse(const char* text, HeketParser parser)
+{
+	HeketParseResult result;
+
+	return result;
+}
