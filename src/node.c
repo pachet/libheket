@@ -2,6 +2,7 @@
 #include <assert.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <stdio.h>
 #include "node.h"
 
 typedef struct ParseResult {
@@ -58,6 +59,7 @@ static bool character_is_alphanumeric(char character)
 
 static int add_child_to_node(HeketNode child_node, HeketNode parent_node)
 {
+
 	// If the last child node added to the parent was a repeat node,
 	// the new child being added should actually be added to the repeat node
 	// instead of being directly added to the current parent. This was the
@@ -75,6 +77,7 @@ static int add_child_to_node(HeketNode child_node, HeketNode parent_node)
 	int bytes = (parent_node.child_count + 1) * sizeof(HeketNode);
 	parent_node.child_nodes = realloc(parent_node.child_nodes, bytes);
 	parent_node.child_nodes[parent_node.child_count] = child_node;
+
 	parent_node.child_count++;
 
 	return 0;
@@ -153,7 +156,8 @@ static ParseResult parse_optional(const char* abnf, int offset)
 	assert(bracket_count == 0);
 
 	HeketNode child_node = {
-		type: NODE_TYPE_OPTIONAL
+		type: NODE_TYPE_OPTIONAL,
+		child_count: 0
 	};
 
 	char* abnf_subset = slice_abnf_subset(abnf, offset, i);
@@ -176,18 +180,18 @@ static ParseResult parse_string(const char* abnf, int offset)
 
 	int i = offset;
 	int len = strlen(abnf);
-	int found_end_quotes = 0;
+	int found_end_quotes = false;
 
 	while (i < len) {
 		char token = abnf[i++];
 
 		if (token == 0x22) {
-			found_end_quotes = 1;
+			found_end_quotes = true;
 			break;
 		}
 	}
 
-	assert(found_end_quotes == 1);
+	assert(found_end_quotes == true);
 
 	char* abnf_subset = slice_abnf_subset(abnf, offset, i);
 
@@ -198,7 +202,7 @@ static ParseResult parse_string(const char* abnf, int offset)
 
 	ParseResult result = {
 		node: &child_node,
-		len:  0
+		len:  i - offset + 1
 	};
 
 	return result;
@@ -236,7 +240,10 @@ static ParseResult parse_numeric(const char* abnf, int offset)
 	// Advance past the base signifier:
 	i++;
 
-	HeketNode container_node;
+	HeketNode container_node = {
+		type: NODE_TYPE_UNSPECIFIED,
+		child_count: 0
+	};
 
 	int segment_start = i;
 
@@ -290,6 +297,7 @@ static ParseResult parse_numeric(const char* abnf, int offset)
 		char* segment = slice_abnf_subset(abnf, segment_start, i);
 		segment_start = i;
 		HeketNode node = create_numeric_value_node(base, segment);
+
 		add_child_to_node(node, container_node);
 	}
 
@@ -302,7 +310,7 @@ static ParseResult parse_numeric(const char* abnf, int offset)
 
 	// If no delimiters were encountered, treat the container node as a
 	// numeric set containing only one child:
-	if (container_node.type == NODE_TYPE_SEQUENTIAL_CHILDREN) {
+	if (container_node.type == NODE_TYPE_UNSPECIFIED) {
 		container_node.type = NODE_TYPE_NUMERIC_SET;
 	}
 
@@ -362,7 +370,8 @@ static ParseResult parse_repeat(const char* abnf, int offset)
 	HeketNode node = {
 		type: NODE_TYPE_REPEATING,
 		min_repeats: min_repeats,
-		max_repeats: max_repeats
+		max_repeats: max_repeats,
+		child_count: 0
 	};
 
 	ParseResult result = {
@@ -461,7 +470,7 @@ static ParseResult parse_whitespace(const char* abnf, int offset)
 
 static ParseResult parse_rulename(const char* abnf, int offset)
 {
-	int i = 0;
+	int i = offset;
 	int len = strlen(abnf);
 
 	char first_token = abnf[i];
@@ -523,14 +532,16 @@ static ParseResult parse_rulename(const char* abnf, int offset)
 
 HeketNode heket_node_from_abnf(const char* abnf)
 {
-	HeketNode node;
+	HeketNode node = {
+		type: NODE_TYPE_SEQUENTIAL_CHILDREN,
+		child_count: 0
+	};
 
 	int i = 0;
 	int len = strlen(abnf);
 
 	while (i < len) {
 		char token = abnf[i];
-
 		ParseResult parse_result;
 
 		switch (token) {
@@ -582,7 +593,7 @@ HeketNode heket_node_from_abnf(const char* abnf)
 
 		i += parse_result.len;
 
-		if (parse_result.node != 0) {
+		if (parse_result.node) {
 			add_child_to_node(*parse_result.node, node);
 		}
 	}
