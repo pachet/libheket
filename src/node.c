@@ -39,6 +39,15 @@ static int character_within_range(char character, char start, char end)
 	return 1;
 }
 
+static int character_is_alphanumeric(char character)
+{
+	return (
+		   character_within_range(character, 0x30, 0x39) // A-Z
+		|| character_within_range(character, 0x41, 0x5A) // 0-9
+		|| character_within_range(character, 0x61, 0x7A) // a-z
+	);
+}
+
 static int add_child_to_node(HeketNode child_node, HeketNode parent_node)
 {
 	if (parent_node.child_count > 0) {
@@ -358,11 +367,8 @@ static ParseResult parse_rulename(const char* abnf, int offset)
 	// no hyphen allowed here. Note that we don't need to perform this
 	// check *after* iterating over the rule name, because we'll only
 	// add characters to the rule name string if the character is allowed.
-	assert(
-		   character_within_range(first_token, 0x30, 0x39)
-		|| character_within_range(first_token, 0x41, 0x5A)
-		|| character_within_range(first_token, 0x61, 0x7A)
-	);
+	assert(character_is_alphanumeric(first_token));
+
 
 	// Iterate over the ABNF string and pull out the rule name.
 	while (i < len) {
@@ -371,10 +377,8 @@ static ParseResult parse_rulename(const char* abnf, int offset)
 		// If the character isn't supported, we assume the rule name is
 		// complete.
 		if (
-			   !character_within_range(first_token, 0x30, 0x39)
-			&& !character_within_range(first_token, 0x41, 0x5A)
-			&& !character_within_range(first_token, 0x61, 0x7A)
-			&& !(first_token == 0x2D)
+			   !character_is_alphanumeric(first_token)
+			&& first_token != 0x2D // -
 		) {
 			break;
 		}
