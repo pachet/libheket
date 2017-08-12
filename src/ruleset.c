@@ -65,8 +65,6 @@ HeketRuleset heket_ruleset_from_filepath(const char* filepath)
 	return heket_ruleset_from_abnf(contents);
 }
 
-
-
-
 void heket_free_ruleset(HeketRuleset ruleset) {
 }
+

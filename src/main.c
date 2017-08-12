@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include "heket.h"
+#include "parser.h"
 
 int main() {
 
