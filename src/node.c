@@ -300,6 +300,12 @@ static ParseResult parse_numeric(const char* abnf, int offset)
 	HeketNode node = create_numeric_value_node(base, segment);
 	add_child_to_node(node, container_node);
 
+	// If no delimiters were encountered, treat the container node as a
+	// numeric set containing only one child:
+	if (container_node.type == NODE_TYPE_SEQUENTIAL_CHILDREN) {
+		container_node.type = NODE_TYPE_NUMERIC_SET;
+	}
+
 	ParseResult result = {
 		node: &container_node,
 		len:  i - offset
