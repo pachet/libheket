@@ -26,6 +26,19 @@ static int node_is_repeating(HeketNode node)
 	return 1;
 }
 
+static int character_within_range(char character, char start, char end)
+{
+	if (character < start) {
+		return 0;
+	}
+
+	if (character > end) {
+		return 0;
+	}
+
+	return 1;
+}
+
 static int add_child_to_node(HeketNode child_node, HeketNode parent_node)
 {
 	if (parent_node.child_count > 0) {
@@ -273,9 +286,64 @@ static ParseResult parse_whitespace(const char* abnf, int offset)
 
 static ParseResult parse_rulename(const char* abnf, int offset)
 {
+	int i = 0;
+	int len = strlen(abnf);
+
+	char first_token = abnf[i];
+
+	// The ABNF specification allows the wrapping of rule names in < ... >.
+	// These delimiters are entirely optional, and only exist to improve
+	// readability. If we encounter one as the first character in the rule
+	// name, we can safely bypass it.
+	if (first_token == 0x3C) {
+		i++;
+	}
+
+	int start_pos = i;
+
+	// Slightly different rules for the first character in a rule name --
+	// no hyphen allowed here. Note that we don't need to perform this
+	// check *after* iterating over the rule name, because we'll only
+	// add characters to the rule name string if the character is allowed.
+	assert(
+		   character_within_range(first_token, 0x30, 0x39)
+		|| character_within_range(first_token, 0x41, 0x5A)
+		|| character_within_range(first_token, 0x61, 0x7A)
+	);
+
+	// Iterate over the ABNF string and pull out the rule name.
+	while (i < len) {
+		char token = abnf[i++];
+
+		// If the character isn't supported, we assume the rule name is
+		// complete.
+		if (
+			   !character_within_range(first_token, 0x30, 0x39)
+			&& !character_within_range(first_token, 0x41, 0x5A)
+			&& !character_within_range(first_token, 0x61, 0x7A)
+			&& !(first_token == 0x2D)
+		) {
+			break;
+		}
+	}
+
+	char* abnf_subset = slice_abnf_subset(abnf, start_pos, i);
+
+	char token = abnf[i];
+
+	// Strip off the trailing ">", if it was specified. (See note above for
+	// more context)
+	if (token == 0x3E) {
+		i++;
+	}
+
+	HeketNode child_node = {
+		rulename: abnf_subset
+	};
+
 	ParseResult result = {
-		node: NULL,
-		len:  0
+		node: &child_node,
+		len:  i - offset
 	};
 
 	return result;

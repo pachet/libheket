@@ -3,6 +3,7 @@
 
 typedef struct HeketNode {
 
+	char* rulename;
 	char* parent_rulename;
 
 	struct HeketNode* child_nodes;
