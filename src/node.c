@@ -1,6 +1,7 @@
 #include <string.h>
 #include <assert.h>
 #include <stdlib.h>
+#include <stdbool.h>
 #include "node.h"
 
 typedef struct ParseResult {
@@ -10,6 +11,22 @@ typedef struct ParseResult {
 
 } ParseResult;
 
+static NumericBase base_from_char(char token)
+{
+	switch (token) {
+	case 0x62: // b
+		return BASE_BINARY;
+
+	case 0x64: // d
+		return BASE_DECIMAL;
+
+	case 0x78: // x
+		return BASE_HEX;
+	default:
+		return BASE_UNKNOWN;
+	}
+}
+
 static HeketNode last_child_of_node(HeketNode parent_node)
 {
 	int child_count = parent_node.child_count;
@@ -17,29 +34,20 @@ static HeketNode last_child_of_node(HeketNode parent_node)
 	return parent_node.child_nodes[child_count - 1];
 }
 
-static int node_is_repeating(HeketNode node)
-{
-	if (node.min_repeats == 0 && node.max_repeats == 0) {
-		return 0;
-	}
-
-	return 1;
-}
-
-static int character_within_range(char character, char start, char end)
+static bool character_within_range(char character, char start, char end)
 {
 	if (character < start) {
-		return 0;
+		return false;
 	}
 
 	if (character > end) {
-		return 0;
+		return false;
 	}
 
-	return 1;
+	return true;
 }
 
-static int character_is_alphanumeric(char character)
+static bool character_is_alphanumeric(char character)
 {
 	return (
 		   character_within_range(character, 0x30, 0x39) // A-Z
@@ -58,7 +66,7 @@ static int add_child_to_node(HeketNode child_node, HeketNode parent_node)
 	if (parent_node.child_count > 0) {
 		HeketNode last_child = last_child_of_node(parent_node);
 
-		if (node_is_repeating(last_child)) {
+		if (last_child.type == NODE_TYPE_REPEATING) {
 			return add_child_to_node(child_node, last_child);
 		}
 	}
@@ -144,10 +152,14 @@ static ParseResult parse_optional(const char* abnf, int offset)
 
 	assert(bracket_count == 0);
 
-	char* abnf_subset = slice_abnf_subset(abnf, offset, i);
-	HeketNode child_node = heket_node_from_abnf(abnf_subset);
+	HeketNode child_node = {
+		type: NODE_TYPE_OPTIONAL
+	};
 
-	child_node.optional = 1;
+	char* abnf_subset = slice_abnf_subset(abnf, offset, i);
+	HeketNode nested_node = heket_node_from_abnf(abnf_subset);
+
+	add_child_to_node(nested_node, child_node);
 
 	ParseResult result = {
 		node: &child_node,
@@ -180,6 +192,7 @@ static ParseResult parse_string(const char* abnf, int offset)
 	char* abnf_subset = slice_abnf_subset(abnf, offset, i);
 
 	HeketNode child_node = {
+		type: NODE_TYPE_STRING,
 		quoted_string: abnf_subset
 	};
 
@@ -191,11 +204,105 @@ static ParseResult parse_string(const char* abnf, int offset)
 	return result;
 }
 
+static HeketNode create_numeric_value_node(NumericBase base, char* segment)
+{
+	char* pointer;
+	int numeric_value = strtol(segment, &pointer, 10);
+
+	assert(numeric_value != *pointer);
+
+	HeketNode node = {
+		type: NODE_TYPE_NUMERIC_VALUE,
+		numeric_value: numeric_value
+	};
+
+	return node;
+}
+
 static ParseResult parse_numeric(const char* abnf, int offset)
 {
+	int i = offset;
+	int len = strlen(abnf);
+
+	// Advance past the initial % signifier:
+	i++;
+
+	// Determine the base to use (binary, decimal, or hex) based on the
+	// leading token:
+	NumericBase base = base_from_char(abnf[i]);
+
+	assert(base != BASE_UNKNOWN);
+
+	// Advance past the base signifier:
+	i++;
+
+	HeketNode container_node;
+
+	int segment_start = i;
+
+	while (i < len) {
+		char token = abnf[i++];
+
+		// If we encounter a slash (option separator) or a space, break
+		// the iteration cycle -- those tokens signify that the numeric
+		// clause was exceeded.
+		if (
+			   token == 0x2F // /
+			|| token == 0x20 // space
+		) {
+			break;
+		}
+
+		if (
+			   token != 0x2D // -
+			&& token != 0x2E // .
+		) {
+			// For all characters except hyphens and periods, we want to
+			// continue reading additional characters.
+			continue;
+		}
+
+		// If we encounter a hyphen, it means the numeric clause should be
+		// treated as a numeric range of values.
+		if (token == 0x2D) {
+			// The ABNF specification doesn't allow specifing numeric ranges
+			// and numeric options (ie, mixing the "-" and "." delimiters)
+			// within the same numeric clause. Check to make sure the node
+			// type for the container node hasn't been set to a numeric set
+			// (in other words, make sure that no "." set delimiter was
+			// previously encountered).
+			assert(container_node.type != NODE_TYPE_NUMERIC_SET);
+			container_node.type = NODE_TYPE_NUMERIC_RANGE;
+		} else if (token == 0x2E) {
+			// Same note as above regarding "-" vs "." delimiters, but in
+			// reverse.
+			assert(container_node.type != NODE_TYPE_NUMERIC_RANGE);
+			container_node.type = NODE_TYPE_NUMERIC_SET;
+		}
+
+		// Make sure at least one character occurred before the "-" or "."
+		// delimiter:
+		assert(i > segment_start + 1);
+
+		// Regardless of whether we encountered a slash or a period, we want
+		// to parse the prior segment as a numeric value for the given base,
+		// and add it to the container.
+		char* segment = slice_abnf_subset(abnf, segment_start, i);
+		segment_start = i;
+		HeketNode node = create_numeric_value_node(base, segment);
+		add_child_to_node(node, container_node);
+	}
+
+	// Numeric clauses will *always* end with a numeric value, regardless
+	// of whether they contain slash delimiters denoting ranges, period
+	// delimiters denoting sets, or no delimiters at all.
+	char* segment = slice_abnf_subset(abnf, segment_start, i);
+	HeketNode node = create_numeric_value_node(base, segment);
+	add_child_to_node(node, container_node);
+
 	ParseResult result = {
-		node: NULL,
-		len:  0
+		node: &container_node,
+		len:  i - offset
 	};
 
 	return result;
@@ -247,6 +354,7 @@ static ParseResult parse_repeat(const char* abnf, int offset)
 	}
 
 	HeketNode node = {
+		type: NODE_TYPE_REPEATING,
 		min_repeats: min_repeats,
 		max_repeats: max_repeats
 	};
@@ -394,6 +502,7 @@ static ParseResult parse_rulename(const char* abnf, int offset)
 	}
 
 	HeketNode child_node = {
+		type: NODE_TYPE_RULE,
 		rulename: abnf_subset
 	};
 
@@ -451,6 +560,7 @@ HeketNode heket_node_from_abnf(const char* abnf)
 
 		case 0x2F: // /
 			parse_result = parse_alternative(abnf, i);
+			node.type = NODE_TYPE_ALTERNATIVE_CHILDREN;
 			break;
 
 		case 0x20: // single space
