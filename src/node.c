@@ -50,17 +50,16 @@ static int character_is_alphanumeric(char character)
 
 static int add_child_to_node(HeketNode child_node, HeketNode parent_node)
 {
+	// If the last child node added to the parent was a repeat node,
+	// the new child being added should actually be added to the repeat node
+	// instead of being directly added to the current parent. This was the
+	// most elegant way of dealing with the forward-affecting nature of
+	// ABNF repetition clauses, and is unique to that node type.
 	if (parent_node.child_count > 0) {
 		HeketNode last_child = last_child_of_node(parent_node);
 
 		if (node_is_repeating(last_child)) {
-			child_node.min_repeats = last_child.min_repeats;
-			child_node.max_repeats = last_child.max_repeats;
-
-			parent_node.child_nodes[parent_node.child_count - 1] = child_node;
-			free(&last_child);
-
-			return 1;
+			return add_child_to_node(child_node, last_child);
 		}
 	}
 
