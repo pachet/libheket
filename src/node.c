@@ -253,9 +253,62 @@ static ParseResult parse_repeat(const char* abnf, int offset)
 
 static ParseResult parse_alternative(const char* abnf, int offset)
 {
+	int i = offset;
+	int len = strlen(abnf);
+
+	// Advance past the initial "/" signifier:
+	i++;
+
+	int start_pos = i;
+
+	// We need to keep track of whether the current string position is located
+	// within a quoted string literal. If so, we need to ignore the appearance
+	// of any "/" tokens, as they're part of the literal and not meant to
+	// signify the next alternative.
+	int within_quoted_str = 0;
+
+	// Same with groups. Except with groups, we need to keep track of the level
+	// of nesting, since we can have groups within groups.
+	int nested_group_level = 0;
+
+	// Walk along the ABNF string, token by token. Break if/when we encounter
+	// another "/" alternative signifier.
+
+	while (i < len) {
+		char token = abnf[i++];
+
+		// If we hit a "/" signifier and we're not currently within a string
+		// literal or group, bail out.
+		if (
+			   token == 0x2F
+			&& within_quoted_str == 0
+			&& nested_group_level == 0
+		) {
+			break;
+		}
+
+		// If we encounter a double quote, it means that a string literal
+		// is either starting or ending, so flip the flag.
+		if (token == 0x22) {
+			within_quoted_str = !within_quoted_str;
+		}
+
+		if (!within_quoted_str) {
+			if (token == 0x28) {
+				nested_group_level++;
+			} else if (token == 0x29) {
+				nested_group_level--;
+			}
+		}
+	}
+
+	char* abnf_subset = slice_abnf_subset(abnf, start_pos, i);
+
+	HeketNode child_node = heket_node_from_abnf(abnf_subset);
+
 	ParseResult result = {
-		node: NULL,
-		len:  0
+		node: &child_node,
+		len:  i - offset
 	};
 
 	return result;
