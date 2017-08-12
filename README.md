@@ -1,6 +1,6 @@
 # libheket
-#
-C port of my JavaScript [ABNF parsing library](https://github.com/burninggarden/heket).
+### *An ABNF parser / unparser generator written in C*
+**libheket** is a C port of my JavaScript [ABNF parsing library](https://github.com/burninggarden/heket).
 
 This is obviously still a work in progress.
 
