@@ -8,15 +8,22 @@
 #include "line-groups.h"
 #include "rule.h"
 
-int heket_add_rule_to_ruleset(HeketRule rule, HeketRuleset ruleset)
+bool heket_add_rule_to_ruleset(HeketRule rule, HeketRuleset* ruleset_ptr)
 {
-	return 0;
+	int bytes = (ruleset_ptr->rule_count + 1) * sizeof(HeketRule);
+	ruleset_ptr->rules = realloc(ruleset_ptr->rules, bytes);
+	ruleset_ptr->rules[ruleset_ptr->rule_count] = rule;
+	ruleset_ptr->rule_count++;
+
+	return true;
 }
 
 
 HeketRuleset heket_ruleset_from_lines(HeketStringArray lines)
 {
-	HeketRuleset ruleset;
+	HeketRuleset ruleset = {
+		rule_count: 0
+	};
 
 	if (!lines.len) {
 		return ruleset;
@@ -32,9 +39,7 @@ HeketRuleset heket_ruleset_from_lines(HeketStringArray lines)
 
 		HeketRule rule = heket_rule_from_lines(line_group);
 
-		if (!heket_add_rule_to_ruleset(rule, ruleset)) {
-			// TODO: cleanup
-		}
+		assert(heket_add_rule_to_ruleset(rule, &ruleset));
 	}
 
 	return ruleset;
@@ -68,3 +73,8 @@ HeketRuleset heket_ruleset_from_filepath(const char* filepath)
 void heket_free_ruleset(HeketRuleset ruleset) {
 }
 
+HeketRule get_first_ruleset_rule(HeketRuleset ruleset)
+{
+	assert(ruleset.rule_count > 0);
+	return ruleset.rules[0];
+}
