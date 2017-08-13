@@ -3,6 +3,18 @@
 #include <stdio.h>
 #include "string-array.h"
 
+char* str_slice(const char* str, int offset)
+{
+	int source_len = strlen(str);
+	int result_len = source_len - offset;
+	int bytes = (result_len + 1) * sizeof(char);
+
+	char* result = malloc(bytes);
+
+	strncpy(result, str, result_len);
+
+	return result;
+}
 
 char* str_copy(const char* str)
 {
