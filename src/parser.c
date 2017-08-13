@@ -6,6 +6,7 @@
 #include "parser.h"
 #include "rule.h"
 #include "parse-result.h"
+#include "parse-state.h"
 #include "util.h"
 #include "ruleset.h"
 
@@ -78,13 +79,7 @@ HeketRule get_first_parser_rule(HeketParser parser)
 HeketParseResult heket_parse(const char* text, HeketParser parser)
 {
 	HeketRule rule = get_first_parser_rule(parser);
-
-	bool allow_partial = false;
-	HeketParseResult parse_result = parse_text_with_rule(
-		text,
-		rule,
-		allow_partial
-	);
+	HeketParseResult parse_result = parse_text_with_rule(text, rule, false);
 
 	return parse_result;
 }
@@ -92,7 +87,8 @@ HeketParseResult heket_parse(const char* text, HeketParser parser)
 
 HeketParseResult parse_text_with_sequential_node(
 	const char* text,
-	HeketNode node
+	HeketNode node,
+	HeketParseState state
 )
 {
 	char* original_string = str_copy(text);
@@ -101,56 +97,88 @@ HeketParseResult parse_text_with_sequential_node(
 	return result;
 }
 
-HeketParseResult parse_text_with_alternative_node(const char* text, HeketNode node)
+HeketParseResult parse_text_with_alternative_node(
+	const char* text,
+	HeketNode node,
+	HeketParseState state
+)
 {
 	HeketParseResult result;
 
 	return result;
 }
 
-HeketParseResult parse_text_with_optional_node(const char* text, HeketNode node)
+HeketParseResult parse_text_with_optional_node(
+	const char* text,
+	HeketNode node,
+	HeketParseState state
+)
 {
 	HeketParseResult result;
 
 	return result;
 }
 
-HeketParseResult parse_text_with_string_node(const char* text, HeketNode node)
+HeketParseResult parse_text_with_string_node(
+	const char* text,
+	HeketNode node,
+	HeketParseState state
+)
 {
 	HeketParseResult result;
 
 	return result;
 }
 
-HeketParseResult parse_text_with_numeric_range_node(const char* text, HeketNode node)
+HeketParseResult parse_text_with_numeric_range_node(
+	const char* text,
+	HeketNode node,
+	HeketParseState state
+)
 {
 	HeketParseResult result;
 
 	return result;
 }
 
-HeketParseResult parse_text_with_numeric_set_node(const char* text, HeketNode node)
+HeketParseResult parse_text_with_numeric_set_node(
+	const char* text,
+	HeketNode node,
+	HeketParseState state
+)
 {
 	HeketParseResult result;
 
 	return result;
 }
 
-HeketParseResult parse_text_with_numeric_value_node(const char* text, HeketNode node)
+HeketParseResult parse_text_with_numeric_value_node(
+	const char* text,
+	HeketNode node,
+	HeketParseState state
+)
 {
 	HeketParseResult result;
 
 	return result;
 }
 
-HeketParseResult parse_text_with_repeating_node(const char* text, HeketNode node)
+HeketParseResult parse_text_with_repeating_node(
+	const char* text,
+	HeketNode node,
+	HeketParseState state
+)
 {
 	HeketParseResult result;
 
 	return result;
 }
 
-HeketParseResult parse_text_with_rule_node(const char* text, HeketNode node)
+HeketParseResult parse_text_with_rule_node(
+	const char* text,
+	HeketNode node,
+	HeketParseState state
+)
 {
 	HeketParseResult result;
 
@@ -160,47 +188,50 @@ HeketParseResult parse_text_with_rule_node(const char* text, HeketNode node)
 HeketParseResult parse_text_with_node(
 	const char* text,
 	HeketNode node,
-	bool allow_partial
+	HeketParseState state
 )
 {
+	bool allow_partial_match = state.allow_partial_match;
+	state.allow_partial_match = true;
+
 	HeketParseResult result;
 
 	switch (node.type) {
 	case NODE_TYPE_SEQUENTIAL:
-		result = parse_text_with_sequential_node(text, node);
+		result = parse_text_with_sequential_node(text, node, state);
 		break;
 
 	case NODE_TYPE_ALTERNATIVE:
-		result = parse_text_with_alternative_node(text, node);
+		result = parse_text_with_alternative_node(text, node, state);
 		break;
 
 	case NODE_TYPE_OPTIONAL:
-		result = parse_text_with_optional_node(text, node);
+		result = parse_text_with_optional_node(text, node, state);
 		break;
 
 	case NODE_TYPE_STRING:
-		result = parse_text_with_string_node(text, node);
+		result = parse_text_with_string_node(text, node, state);
 		break;
 
 	case NODE_TYPE_NUMERIC_RANGE:
-		result = parse_text_with_numeric_range_node(text, node);
+		result = parse_text_with_numeric_range_node(text, node, state);
 		break;
 
 
 	case NODE_TYPE_NUMERIC_SET:
-		result = parse_text_with_numeric_set_node(text, node);
+		result = parse_text_with_numeric_set_node(text, node, state);
 		break;
 
 	case NODE_TYPE_NUMERIC_VALUE:
-		result = parse_text_with_numeric_value_node(text, node);
+		result = parse_text_with_numeric_value_node(text, node, state);
 		break;
 
 	case NODE_TYPE_REPEATING:
-		result = parse_text_with_repeating_node(text, node);
+		result = parse_text_with_repeating_node(text, node, state);
 		break;
 
 	case NODE_TYPE_RULE:
-		result = parse_text_with_rule_node(text, node);
+		result = parse_text_with_rule_node(text, node, state);
 		break;
 
 	case NODE_TYPE_UNSPECIFIED:
@@ -208,7 +239,7 @@ HeketParseResult parse_text_with_node(
 		assert(false);
 	}
 
-	if (allow_partial == false && result.error_code == ERROR_CODE_NONE) {
+	if (allow_partial_match == false && result.error_code == ERROR_CODE_NONE) {
 		int actual_len = strlen(result.text);
 		int expected_len = strlen(text);
 
