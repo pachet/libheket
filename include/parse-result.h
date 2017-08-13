@@ -15,4 +15,6 @@ typedef struct HeketParseResult {
 
 } HeketParseResult;
 
+HeketParseResult create_empty_parse_result();
+
 #endif

@@ -14,6 +14,14 @@ bool advance_node_to_next_child(HeketNode node, HeketParseState state)
 {
 }
 
+bool revert_node_to_prior_alternative(HeketNode node, HeketParseState state)
+{
+}
+
+int get_child_index_for_node(HeketNode node, HeketParseState state)
+{
+}
+
 HeketNode get_current_child_for_node(HeketNode node, HeketParseState state)
 {
 }
