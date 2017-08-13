@@ -4,6 +4,7 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include "node.h"
+#include "util.h"
 #include "parse-result.h"
 
 typedef struct ParseResult {
@@ -602,8 +603,12 @@ HeketNode heket_node_from_abnf(const char* abnf)
 	return node;
 }
 
-HeketParseResult parse_text_with_sequential_node(const char* text, HeketNode node)
+HeketParseResult parse_text_with_sequential_node(
+	const char* text,
+	HeketNode node
+)
 {
+	char* original_string = str_copy(text);
 	HeketParseResult result;
 
 	return result;
@@ -665,32 +670,67 @@ HeketParseResult parse_text_with_rule_node(const char* text, HeketNode node)
 	return result;
 }
 
-HeketParseResult parse_text_with_node(const char* text, HeketNode node)
+HeketParseResult parse_text_with_node(
+	const char* text,
+	HeketNode node,
+	bool allow_partial
+)
 {
 	HeketParseResult result;
 
 	switch (node.type) {
 	case NODE_TYPE_SEQUENTIAL:
-		return parse_text_with_sequential_node(text, node);
+		result = parse_text_with_sequential_node(text, node);
+		break;
+
 	case NODE_TYPE_ALTERNATIVE:
-		return parse_text_with_alternative_node(text, node);
+		result = parse_text_with_alternative_node(text, node);
+		break;
+
 	case NODE_TYPE_OPTIONAL:
-		return parse_text_with_optional_node(text, node);
+		result = parse_text_with_optional_node(text, node);
+		break;
+
 	case NODE_TYPE_STRING:
-		return parse_text_with_string_node(text, node);
+		result = parse_text_with_string_node(text, node);
+		break;
+
 	case NODE_TYPE_NUMERIC_RANGE:
-		return parse_text_with_numeric_range_node(text, node);
+		result = parse_text_with_numeric_range_node(text, node);
+		break;
+
+
 	case NODE_TYPE_NUMERIC_SET:
-		return parse_text_with_numeric_set_node(text, node);
+		result = parse_text_with_numeric_set_node(text, node);
+		break;
+
 	case NODE_TYPE_NUMERIC_VALUE:
-		return parse_text_with_numeric_value_node(text, node);
+		result = parse_text_with_numeric_value_node(text, node);
+		break;
+
 	case NODE_TYPE_REPEATING:
-		return parse_text_with_repeating_node(text, node);
+		result = parse_text_with_repeating_node(text, node);
+		break;
+
 	case NODE_TYPE_RULE:
-		return parse_text_with_rule_node(text, node);
+		result = parse_text_with_rule_node(text, node);
+		break;
+
 	case NODE_TYPE_UNSPECIFIED:
 	default:
 		assert(false);
+	}
+
+	if (allow_partial == false && result.error_code == ERROR_CODE_NONE) {
+		int actual_len = strlen(result.text);
+		int expected_len = strlen(text);
+
+		if (actual_len < expected_len) {
+			HeketParseResult result = {
+				text: text,
+				error_code: ERROR_CODE_INPUT_TOO_LONG
+			};
+		}
 	}
 
 	return result;

@@ -4,6 +4,16 @@
 #include "string-array.h"
 
 
+char* str_copy(const char* str)
+{
+	int bytes = (strlen(str) + 1) * sizeof(char);
+	char* copy = malloc(bytes);
+	strcpy(copy, str);
+
+	return copy;
+}
+
+
 HeketStringArray str_split(const char* str, const char delim)
 {
 	int i = 0;

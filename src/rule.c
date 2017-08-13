@@ -48,7 +48,8 @@ static HeketStringArray remove_line_comments(HeketStringArray lines)
 	return result;
 }
 
-HeketRule heket_rule_from_lines(HeketStringArray lines) {
+HeketRule heket_rule_from_lines(HeketStringArray lines)
+{
 	HeketRule result;
 
 	HeketStringArray cleaned_lines = remove_line_comments(lines);
@@ -105,8 +106,12 @@ HeketRule heket_rule_from_lines(HeketStringArray lines) {
 	return result;
 }
 
-HeketParseResult parse_text_with_rule(const char* text, HeketRule rule)
+HeketParseResult parse_text_with_rule(
+	const char* text,
+	HeketRule rule,
+	bool allow_partial
+)
 {
-	return parse_text_with_node(text, rule.node);
+	return parse_text_with_node(text, rule.node, allow_partial);
 }
 

@@ -76,7 +76,13 @@ HeketRule get_first_parser_rule(HeketParser parser)
 HeketParseResult heket_parse(const char* text, HeketParser parser)
 {
 	HeketRule rule = get_first_parser_rule(parser);
-	HeketParseResult parse_result = parse_text_with_rule(text, rule);
+
+	bool allow_partial = false;
+	HeketParseResult parse_result = parse_text_with_rule(
+		text,
+		rule,
+		allow_partial
+	);
 
 	return parse_result;
 }

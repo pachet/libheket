@@ -48,6 +48,6 @@ typedef struct HeketNode {
 
 HeketNode heket_node_from_abnf(const char* abnf);
 
-HeketParseResult parse_text_with_node(const char* text, HeketNode node);
+HeketParseResult parse_text_with_node(const char* text, HeketNode node, bool allow_partial);
 
 #endif
