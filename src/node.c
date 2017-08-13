@@ -602,3 +602,12 @@ HeketNode heket_node_from_abnf(const char* abnf)
 	return node;
 }
 
+bool node_is_optional(HeketNode node)
+{
+	return node.type == NODE_TYPE_OPTIONAL;
+}
+
+bool node_has_rulename(HeketNode node)
+{
+	return node.type == NODE_TYPE_RULE;
+}

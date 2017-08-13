@@ -45,5 +45,7 @@ typedef struct HeketNode {
 } HeketNode;
 
 HeketNode heket_node_from_abnf(const char* abnf);
+bool node_is_optional(HeketNode node);
+bool node_has_rulename(HeketNode node);
 
 #endif
