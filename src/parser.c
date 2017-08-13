@@ -6,6 +6,7 @@
 #include "parser.h"
 #include "rule.h"
 #include "parse-result.h"
+#include "parse-result-list.h"
 #include "parse-state.h"
 #include "util.h"
 #include "ruleset.h"
@@ -94,20 +95,55 @@ HeketParseResult parse_text_with_sequential_node(
 )
 {
 	char* original_string = str_copy(text);
-	HeketParseResult result;
+	HeketParseResultList result_list;
 
 	while (node_has_remaining_children(node, state)) {
 		HeketNode child_node = get_current_child_for_node(node, state);
 		HeketParseResult result = parse_text_with_node(text, child_node, state);
+
+		if (result.error_code != ERROR_CODE_NONE) {
+			if (node_is_optional(child_node)) {
+				advance_node_to_next_child(node, state);
+				append_empty_parse_result_to_list(result_list);
+				continue;
+			}
+
+			if (revert_node_to_prior_alternative(node, state)) {
+				int child_index = get_child_index_for_node(node, state);
+				truncate_parse_result_list(result_list, child_index);
+				text = combine_parse_result_list(result_list).text;
+			}
+
+			return result;
+		}
+
+		append_parse_result_to_list(result, result_list);
+		text = str_slice(text, strlen(result.text));
 
 		if (node_is_at_last_child(node, state)) {
 			break;
 		}
 
 		advance_node_to_next_child(node, state);
+
+		if (!strlen(text)) {
+			HeketNode current_child = get_current_child_for_node(node, state);
+
+			if (node_is_optional(current_child)) {
+				continue;
+			}
+
+			if (node_has_rulename(current_child)) {
+				// TODO: return result indicating missing rule value
+				assert(false);
+			} else {
+				// TODO: return result indicating input was too short
+				assert(false);
+			}
+		}
 	}
 
-	return result;
+	return combine_parse_result_list(result_list);
 }
 
 HeketParseResult parse_text_with_alternative_node(
