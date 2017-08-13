@@ -76,13 +76,7 @@ HeketRule get_first_parser_rule(HeketParser parser)
 	return get_first_ruleset_rule(ruleset);
 }
 
-HeketParseResult heket_parse(const char* text, HeketParser parser)
-{
-	HeketRule rule = get_first_parser_rule(parser);
-	HeketParseResult parse_result = parse_text_with_rule(text, rule, false);
 
-	return parse_result;
-}
 
 
 HeketParseResult parse_text_with_sequential_node(
@@ -252,4 +246,27 @@ HeketParseResult parse_text_with_node(
 	}
 
 	return result;
+}
+
+HeketParseResult parse_text_with_rule(
+	const char* text,
+	HeketRule rule,
+	bool allow_partial_match
+)
+{
+	HeketParseState state = {
+		allow_partial_match: allow_partial_match
+	};
+
+	HeketParseResult result = parse_text_with_node(text, rule.node, state);
+
+	return result;
+}
+
+HeketParseResult heket_parse(const char* text, HeketParser parser)
+{
+	HeketRule rule = get_first_parser_rule(parser);
+	HeketParseResult parse_result = parse_text_with_rule(text, rule, false);
+
+	return parse_result;
 }

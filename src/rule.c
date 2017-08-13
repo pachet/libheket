@@ -6,6 +6,7 @@
 #include "rule.h"
 #include "parse-result.h"
 #include "parse-state.h"
+#include "parser.h"
 
 static char* remove_line_comment(char* line) {
 	int within_quoted_str = 0;
@@ -105,18 +106,5 @@ HeketRule heket_rule_from_lines(HeketStringArray lines)
 	result.node = node;
 
 	return result;
-}
-
-HeketParseResult parse_text_with_rule(
-	const char* text,
-	HeketRule rule,
-	bool allow_partial_match
-)
-{
-	HeketParseState state = {
-		allow_partial_match: allow_partial_match
-	};
-
-	return parse_text_with_node(text, rule.node, state);
 }
 
