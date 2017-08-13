@@ -18,4 +18,6 @@ bool add_ruleset_to_parser(HeketRuleset ruleset, HeketParser* parser_ptr);
 
 HeketParseResult heket_parse(const char* text, HeketParser parser);
 
+
+
 #endif

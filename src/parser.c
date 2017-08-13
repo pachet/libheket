@@ -10,6 +10,14 @@
 #include "util.h"
 #include "ruleset.h"
 
+// Forward declaration to allow mutual recursion.
+HeketParseResult parse_text_with_node(
+	const char* text,
+	HeketNode node,
+	HeketParseState state
+);
+
+
 bool add_ruleset_to_parser(HeketRuleset ruleset, HeketParser* parser_ptr)
 {
 	int bytes = (parser_ptr->ruleset_count + 1) * sizeof(HeketRuleset);
@@ -87,6 +95,17 @@ HeketParseResult parse_text_with_sequential_node(
 {
 	char* original_string = str_copy(text);
 	HeketParseResult result;
+
+	while (node_has_remaining_children(node, state)) {
+		HeketNode child_node = get_current_child_for_node(node, state);
+		HeketParseResult result = parse_text_with_node(text, child_node, state);
+
+		if (node_is_at_last_child(node, state)) {
+			break;
+		}
+
+		advance_node_to_next_child(node, state);
+	}
 
 	return result;
 }
@@ -270,3 +289,4 @@ HeketParseResult heket_parse(const char* text, HeketParser parser)
 
 	return parse_result;
 }
+
