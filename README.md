@@ -12,5 +12,5 @@ Usage:
 `````c
 #include <heket.h>
 
-HeketRuleset = heket.ruleset_from_abnf("foo = \"bar\" | \"baz\"");
+HeketRuleset ruleset = heket.ruleset_from_abnf("foo = \"bar\" | \"baz\"");
 `````
